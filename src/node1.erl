@@ -1,19 +1,28 @@
 -module (node1).
 -export ([start/1, start/2]).
+-define('Stabilize',500).
+-define('Timeout',1000).
+
 node(Id, Predecessor, Successor) ->
 	receive
-		{key, Qref, Peer} ->
+		{key, Qref, Peer} -> %  a peer needs to know our key
 			Peer ! {Qref, Id},
+			io:format("~w requested for ~w key.~n",[Peer, Id]),
 			node(Id, Predecessor, Successor);
-		{notify, New} ->
+		{notify, New} -> %  a new node informs us of its existence
 			Pred = notify(New, Id, Predecessor),
+			% io:format("Predecessor of ~w is ~w~n",[Id, Pred]),
 			node(Id, Pred, Successor);
-		{request, Peer} ->
+		{request, Peer} -> % a predecessor needs to know our predecessor
 			request(Peer, Predecessor),
 			node(Id, Predecessor, Successor);
-		{status, Pred} ->
+		{status, Pred} -> % our successor informs us about its predecessor
 			Succ = stabilize(Pred, Id, Successor),
+			% io:format("Successor of ~w is ~w~n",[Id, Succ]),
 			node(Id, Predecessor, Succ);
+		stabilize ->
+			stabilize(Successor),
+			node(Id, Predecessor, Successor);
 		probe ->
 			create_probe(Id, Successor),
 			node(Id, Predecessor, Successor);
@@ -22,7 +31,8 @@ node(Id, Predecessor, Successor) ->
 			node(Id, Predecessor, Successor);
 		{probe, Ref, Nodes, T} ->
 			forward_probe(Ref, T, Nodes, Id, Successor),
-			node(Id, Predecessor, Successor);
+			node(Id, Predecessor, Successor)
+		
 end.
 
 
@@ -95,6 +105,7 @@ init(Id, Peer) ->
 
 
 connect(Id, nil) ->
+	io:format("Node ~w started.~n",[Id]),
 	{ok, {Id,self()}};
 
 connect(Id, Peer) ->
@@ -102,8 +113,25 @@ connect(Id, Peer) ->
 	Peer ! {key, Qref, self()},
 	receive
 		{Qref, Skey} ->
+			io:format("Node ~w started.~n",[Id]),
 			{ok,{Skey,Peer}}
 	after 
 		?Timeout ->
 		io:format("Time out: no response~n")
 	end.
+
+%send first probe
+create_probe(Id, Successor) ->
+	{_,Pid} = Successor,
+	io:format("Creating Probe~n"),
+	Pid ! {probe, Id,[Id],erlang:system_time(micro_seconds)}.
+%print Time
+remove_probe(T, Nodes) ->
+	Diff = (erlang:system_time(micro_seconds) - T),
+	io:format("Removing probe after ~w microseconds. Probe has hooped through ~w~n",[Diff, Nodes]).
+
+%send prob to successor
+forward_probe(Ref, T, Nodes, Id, Successor)->
+	{_,Pid} = Successor,
+	io:format("Forwarding probe at ~w ~n",[Id]),
+	Pid ! {probe,Ref,[Id|Nodes],T}.
