@@ -1,7 +1,7 @@
 -module (node2).
 -export([start/1, start/2, init/2, node/4, stabilize/3, stabilize/1]).
--define('Stabilize',500).
--define('Timeout',1000).
+-define('Stabilize',1000).
+-define('Timeout',10000).
 
 node(Id, Predecessor, Successor , Store) ->
 	receive
