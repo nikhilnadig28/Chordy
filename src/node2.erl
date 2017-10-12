@@ -32,10 +32,9 @@ node(Id, Predecessor, Successor , Store) ->
 		status ->
 			io:format("Node: ~w   Predecessor: ~w Successor: ~w  Storage: ~w~n", [Id, Predecessor, Successor, Store]),
 			node(Id, Predecessor, Successor, Store);
-		{add, Key, Value}->
-			self() ! {add, Key, Value, self(), self()};
 		{add, Key, Value, Qref, Client} ->
 			Added = add(Key, Value, Qref, Client, Id, Predecessor, Successor, Store),
+			% io:format("Node Id : ~w~n",[Id]),
 			node(Id, Predecessor, Successor, Added);
 		{lookup, Key, Qref, Client} ->
 			lookup(Key, Qref, Client, Id, Predecessor, Successor, Store),
@@ -43,6 +42,9 @@ node(Id, Predecessor, Successor , Store) ->
 		{handover, Elements} ->
 			Merged = storage:merge(Store, Elements),
 			node(Id, Predecessor, Successor, Merged);
+		kill ->
+			io:format("Node killed~n"),
+			ok;
 		Error ->
 			io:format("Error! ~w~n", [Error]),
 			node(Id,Predecessor,Successor , Store)

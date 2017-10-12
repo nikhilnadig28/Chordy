@@ -14,7 +14,7 @@ start(Module) ->
 
 start(Module, P) ->
     Id = key:generate(), 
-    apply(Module, start, [Id,P]).    
+    apply(Module, start, [Id, P]).    
 
 start(_, 0, _) ->
     ok;

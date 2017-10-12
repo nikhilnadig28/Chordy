@@ -30,10 +30,11 @@ node(Id, Predecessor, Successor , Store, Next) ->
 			forward_probe(Ref, T, Nodes, Id, Successor),
 			node(Id, Predecessor, Successor , Store, Next);
 		status ->
-			io:format("Node: ~w   Predecessor: ~w Successor: ~w  Storage: ~w~n", [Id, Predecessor, Successor, Store]),
+			io:format("Node: ~w   Predecessor: ~w Successor: ~w Next: ~w  Storage: ~w~n", [Id, Predecessor, Successor, Next, Store]),
 			node(Id, Predecessor, Successor, Store, Next);
-		{add, Key, Value}->
-			self() ! {add, Key, Value, self(), self()};
+		kill ->
+			io:format("Node killed"),
+			ok;
 		{add, Key, Value, Qref, Client} ->
 			Added = add(Key, Value, Qref, Client, Id, Predecessor, Successor, Store),
 			node(Id, Predecessor, Successor, Added, Next);
